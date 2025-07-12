@@ -1,34 +1,44 @@
 import streamlit as st
 import numpy as np
-from PIL import Image
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from PIL import Image
+import io
 
-def image_to_voxel(image_path, block_size=10, brightness_threshold=100):
-    # Load image and resize for faster processing
-    img = Image.open(image_path).convert('L')  # convert to grayscale
-    img = img.resize((int(img.width / block_size), int(img.height / block_size)))
+st.set_page_config(page_title="3D Voxel Style Image Converter", layout="wide")
+st.title("🧊 3D Voxel Style Image Converter")
 
-    data = np.asarray(img)
-    x, y = data.shape
+uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
+
+block_size = st.slider("Block Size (Smaller = More Voxels)", min_value=1, max_value=20, value=6)
+z_scale = st.slider("Z Height Scale", min_value=1, max_value=100, value=20)
+brightness_threshold = st.slider("Brightness Threshold", 0, 255, 30)
+
+if uploaded_file:
+    image = Image.open(uploaded_file).convert('RGB')
+    image = image.resize((64, 64))
+    img_array = np.array(image)
 
     fig = plt.figure(figsize=(10, 10))
     ax = fig.add_subplot(111, projection='3d')
-
-    for i in range(x):
-        for j in range(y):
-            brightness = data[i, j]
-            if brightness < brightness_threshold:
-                height = (255 - brightness) / 20
-                ax.bar3d(j, i, 0, 1, 1, height, shade=True, color=plt.cm.gray(brightness/255))
-
     ax.set_axis_off()
+
+    x_size, y_size, _ = img_array.shape
+    
+    for x in range(0, x_size, block_size):
+        for y in range(0, y_size, block_size):
+            r, g, b = img_array[x, y]
+            brightness = 0.299*r + 0.587*g + 0.114*b
+            
+            if brightness > brightness_threshold:
+                height = (brightness / 255) * z_scale
+                color = (r / 255, g / 255, b / 255)
+                ax.bar3d(x, y, 0, block_size, block_size, height, color=color, shade=True)
+
+    ax.view_init(elev=45, azim=135)
     st.pyplot(fig)
 
-# Streamlit UI
-st.title('3D Voxel Style Image Converter')
-uploaded_image = st.file_uploader("Upload an image", type=["jpg", "png"])
-
-if uploaded_image:
-    st.image(uploaded_image, caption="Uploaded Image", use_column_width=True)
-    image_to_voxel(uploaded_image)
+    # Tombol download gambar
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png")
+    st.download_button("💾 Download Voxel Image as PNG", data=buf.getvalue(), file_name="voxel_output.png", mime="image/png")
