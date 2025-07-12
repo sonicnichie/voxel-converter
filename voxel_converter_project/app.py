@@ -18,7 +18,7 @@ mode = st.selectbox("Rendering Mode", ["Voxel Full Color", "Voxel Edge Only", "V
 
 if uploaded_file:
     image = Image.open(uploaded_file).convert('RGB')
-    image = image.resize((128, 128))  # Ukuran lebih besar untuk menangkap bentuk
+    image = image.resize((192, 192))  # Lebih besar untuk detail lebih halus
     img_array = np.array(image).astype(np.float32) * contrast_boost
     img_array = np.clip(img_array, 0, 255)
 
@@ -44,6 +44,7 @@ if uploaded_file:
             r, g, b = np.mean(block[:, :, 0]), np.mean(block[:, :, 1]), np.mean(block[:, :, 2])
             brightness = 0.299*r + 0.587*g + 0.114*b
             height = (brightness / 255.0) * z_scale
+            height = max(height, 1)  # Tambahkan tinggi minimum agar selalu kelihatan
 
             include = True
             color = (r/255.0, g/255.0, b/255.0)
@@ -53,8 +54,8 @@ if uploaded_file:
                 if np.mean(mask_block) < 10:
                     include = False
                 if mode == "Voxel Silhouette":
-                    height = z_scale  # Tetap tinggi seragam
-                    color = (0.2, 0.2, 0.2)  # Warna abu-abu solid
+                    height = z_scale
+                    color = (0.2, 0.2, 0.2)
 
             if include:
                 _x.append(x)
@@ -67,7 +68,13 @@ if uploaded_file:
 
     ax.bar3d(_x, _y, _z, _dx, _dy, _dz, color=_colors, shade=True, edgecolor='k', linewidth=0.05)
     ax.view_init(elev=45, azim=45)
+    ax.set_xlim(0, w)
+    ax.set_ylim(0, h)
+    ax.set_zlim(0, z_scale)
+
     st.pyplot(fig)
+
+    st.markdown(f"🧱 **Total Voxels Rendered:** `{len(_x)}`")
 
     buf = io.BytesIO()
     fig.savefig(buf, format="png")
