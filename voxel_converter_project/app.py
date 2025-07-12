@@ -10,8 +10,8 @@ st.title("🧊 3D Voxel Style Image Converter")
 
 uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 
-block_size = st.slider("Block Size (Smaller = More Voxels)", min_value=1, max_value=20, value=6)
-z_scale = st.slider("Z Height Scale", min_value=1, max_value=100, value=20)
+block_size = st.slider("Block Size (Smaller = More Voxels)", min_value=1, max_value=10, value=4)
+z_scale = st.slider("Z Height Scale", min_value=1, max_value=50, value=10)
 brightness_threshold = st.slider("Brightness Threshold", 0, 255, 30)
 
 if uploaded_file:
@@ -23,19 +23,17 @@ if uploaded_file:
     ax = fig.add_subplot(111, projection='3d')
     ax.set_axis_off()
 
-    x_size, y_size, _ = img_array.shape
-    
     _x, _y, _z, _dx, _dy, _dz, _colors = [], [], [], [], [], [], []
 
-    for x in range(0, x_size, block_size):
-        for y in range(0, y_size, block_size):
-            r, g, b = img_array[y, x]  # switched x and y because image axes are inverted
+    for y in range(0, img_array.shape[0], block_size):
+        for x in range(0, img_array.shape[1], block_size):
+            r, g, b = img_array[y, x]
             brightness = 0.299*r + 0.587*g + 0.114*b
 
             if brightness > brightness_threshold:
                 height = (brightness / 255) * z_scale
                 _x.append(x)
-                _y.append(y)
+                _y.append(img_array.shape[0] - y)  # flip y for upright
                 _z.append(0)
                 _dx.append(block_size)
                 _dy.append(block_size)
@@ -43,7 +41,7 @@ if uploaded_file:
                 _colors.append((r / 255, g / 255, b / 255))
 
     ax.bar3d(_x, _y, _z, _dx, _dy, _dz, color=_colors, shade=True)
-    ax.view_init(elev=60, azim=45)
+    ax.view_init(elev=60, azim=135)
     st.pyplot(fig)
 
     # Tombol download gambar
