@@ -25,17 +25,25 @@ if uploaded_file:
 
     x_size, y_size, _ = img_array.shape
     
+    _x, _y, _z, _dx, _dy, _dz, _colors = [], [], [], [], [], [], []
+
     for x in range(0, x_size, block_size):
         for y in range(0, y_size, block_size):
-            r, g, b = img_array[x, y]
+            r, g, b = img_array[y, x]  # switched x and y because image axes are inverted
             brightness = 0.299*r + 0.587*g + 0.114*b
-            
+
             if brightness > brightness_threshold:
                 height = (brightness / 255) * z_scale
-                color = (r / 255, g / 255, b / 255)
-                ax.bar3d(x, y, 0, block_size, block_size, height, color=color, shade=True)
+                _x.append(x)
+                _y.append(y)
+                _z.append(0)
+                _dx.append(block_size)
+                _dy.append(block_size)
+                _dz.append(height)
+                _colors.append((r / 255, g / 255, b / 255))
 
-    ax.view_init(elev=45, azim=135)
+    ax.bar3d(_x, _y, _z, _dx, _dy, _dz, color=_colors, shade=True)
+    ax.view_init(elev=60, azim=45)
     st.pyplot(fig)
 
     # Tombol download gambar
