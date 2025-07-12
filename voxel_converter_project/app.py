@@ -11,7 +11,7 @@ st.title("🧊 3D Voxel Style Image Converter")
 uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 
 block_size = st.slider("Block Size (Smaller = More Voxels)", min_value=1, max_value=16, value=4)
-z_scale = st.slider("Z Height Scale", min_value=1, max_value=50, value=15)
+z_scale = st.slider("Z Height Scale", min_value=1, max_value=50, value=5)
 contrast_boost = st.slider("Contrast Boost (0.5 - 3.0)", min_value=0.5, max_value=3.0, value=1.5, step=0.1)
 
 if uploaded_file:
@@ -20,8 +20,9 @@ if uploaded_file:
     img_array = np.array(image).astype(np.float32) * contrast_boost
     img_array = np.clip(img_array, 0, 255)
 
-    fig = plt.figure(figsize=(10, 10))
+    fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(111, projection='3d')
+    ax.set_facecolor((1, 1, 1))
     ax.set_axis_off()
 
     _x, _y, _z, _dx, _dy, _dz, _colors = [], [], [], [], [], [], []
@@ -34,17 +35,17 @@ if uploaded_file:
             brightness = 0.299*r + 0.587*g + 0.114*b
 
             height = (brightness / 255.0) * z_scale
-            if height > 1:
+            if height > 0.5:
                 _x.append(x)
-                _y.append(y)  # tidak dibalik, tampak dari atas
+                _y.append(h - y)  # dibalik agar tegak
                 _z.append(0)
                 _dx.append(block_size)
                 _dy.append(block_size)
                 _dz.append(height)
                 _colors.append((r/255.0, g/255.0, b/255.0))
 
-    ax.bar3d(_x, _y, _z, _dx, _dy, _dz, color=_colors, shade=True)
-    ax.view_init(elev=90, azim=-90)  # tampak dari atas
+    ax.bar3d(_x, _y, _z, _dx, _dy, _dz, color=_colors, shade=True, edgecolor='k', linewidth=0.05)
+    ax.view_init(elev=45, azim=45)
     st.pyplot(fig)
 
     buf = io.BytesIO()
