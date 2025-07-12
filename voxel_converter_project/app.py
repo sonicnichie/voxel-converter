@@ -52,7 +52,8 @@ if uploaded_file:
                 if np.mean(mask_block) < 10:
                     include = False
                 if mode == "Voxel Silhouette":
-                    color = (0.2, 0.2, 0.2)  # abu-abu
+                    height = z_scale  # Tetap
+                    color = (0.2, 0.2, 0.2)  # abu-abu solid
 
             if include and height > 0.5:
                 _x.append(x)
