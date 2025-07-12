@@ -14,7 +14,7 @@ uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 block_size = st.slider("Block Size (Smaller = More Voxels)", min_value=1, max_value=16, value=4)
 z_scale = st.slider("Z Height Scale", min_value=1, max_value=50, value=5)
 contrast_boost = st.slider("Contrast Boost (0.5 - 3.0)", min_value=0.5, max_value=3.0, value=1.5, step=0.1)
-mode = st.selectbox("Rendering Mode", ["Voxel Full Color", "Voxel Edge Only"])
+mode = st.selectbox("Rendering Mode", ["Voxel Full Color", "Voxel Edge Only", "Voxel Silhouette"])
 
 if uploaded_file:
     image = Image.open(uploaded_file).convert('RGB')
@@ -30,9 +30,12 @@ if uploaded_file:
     _x, _y, _z, _dx, _dy, _dz, _colors = [], [], [], [], [], [], []
     h, w, _ = img_array.shape
 
-    if mode == "Voxel Edge Only":
+    if mode in ["Voxel Edge Only", "Voxel Silhouette"]:
         gray = np.mean(img_array, axis=2).astype(np.uint8)
-        edges = cv2.Canny(gray, 50, 150)
+        if mode == "Voxel Edge Only":
+            mask = cv2.Canny(gray, 50, 150)
+        elif mode == "Voxel Silhouette":
+            _, mask = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY)
 
     for y in range(0, h, block_size):
         for x in range(0, w, block_size):
@@ -42,10 +45,14 @@ if uploaded_file:
             height = (brightness / 255.0) * z_scale
 
             include = True
-            if mode == "Voxel Edge Only":
-                edge_block = edges[y:y+block_size, x:x+block_size]
-                if np.mean(edge_block) < 10:
+            color = (r/255.0, g/255.0, b/255.0)
+
+            if mode in ["Voxel Edge Only", "Voxel Silhouette"]:
+                mask_block = mask[y:y+block_size, x:x+block_size]
+                if np.mean(mask_block) < 10:
                     include = False
+                if mode == "Voxel Silhouette":
+                    color = (0.2, 0.2, 0.2)  # abu-abu
 
             if include and height > 0.5:
                 _x.append(x)
@@ -54,7 +61,7 @@ if uploaded_file:
                 _dx.append(block_size)
                 _dy.append(block_size)
                 _dz.append(height)
-                _colors.append((r/255.0, g/255.0, b/255.0))
+                _colors.append(color)
 
     ax.bar3d(_x, _y, _z, _dx, _dy, _dz, color=_colors, shade=True, edgecolor='k', linewidth=0.05)
     ax.view_init(elev=45, azim=45)
