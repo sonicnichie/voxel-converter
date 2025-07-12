@@ -41,4 +41,4 @@ if uploaded_file:
     ax.set_axis_off()
 
     _x, _y, _z, _dx, _dy, _dz, _colors = [], [], [], [], [], [], []
-    h, w, _ = img_
+    h, w, _ = img_array.shape
